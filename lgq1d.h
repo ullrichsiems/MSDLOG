@@ -11,6 +11,7 @@ class LGq1D {
 
   private:
     void ReadInput();
+    void PrintParameter();
     void Init();
     void Run();
     void DefineLattice();

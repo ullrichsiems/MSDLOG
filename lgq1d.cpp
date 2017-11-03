@@ -14,6 +14,7 @@ std::mt19937 gen(rd());
 
 LGq1D::LGq1D(int, char **) {
     ReadInput();
+    PrintParameter();
     Init();
     Run();
 }
@@ -45,8 +46,8 @@ void LGq1D::ReadInput() {
             val = strtok(NULL, " \t\n");
             if (strcmp("n_step", var) == 0) {
                 n_step = atoi(val);
-            } else if (strcmp("n_step", var) == 0) {
-                n_step = atoi(val);
+            } else if (strcmp("eq_step", var) == 0) {
+                eq_step = atoi(val);
             } else if (strcmp("n_x", var) == 0) {
                 n_x = atoi(val);
             } else if (strcmp("n_y", var) == 0) {
@@ -70,6 +71,15 @@ void LGq1D::ReadInput() {
     }
 }
 
+void LGq1D::PrintParameter() {
+    printf("n_x = %d\n", n_x);
+    printf("n_y = %d\n", n_y);
+    printf("n_z = %d\n", n_z);
+
+    printf("d = %d\n", d);
+    printf("n_step = %d\n", n_step);
+}
+
 void LGq1D::Init() {
     DefineLattice();
     FillLattice();
@@ -90,7 +100,6 @@ void LGq1D::Run() {
     pFile = fopen("MLattice.dat", "w");
     PrintLattice(pFile);
     fclose(pFile);
-
     printf("EQ fertig\n");
 
     MSDInit();
@@ -214,29 +223,37 @@ void LGq1D::MakeStep() {
         }
         int left = (x[j][1] + 1);
         int right = (x[j][1] - 1);
-        if (is_periodic == true) {
-            if (left >= n_y)
-                left = n_y;
-            else if (right < 0)
-                right = 0;
+        if (n_y == 1) {
+            left = right = 0;
         } else {
-            if (left >= n_y)
-                left = right;
-            else if (right < 0)
-                right = left;
+            if (is_periodic == true) {
+                if (left >= n_y)
+                    left = 0;
+                else if (right < 0)
+                    right = n_y - 1;
+            } else {
+                if (left >= n_y)
+                    left = right;
+                else if (right < 0)
+                    right = left;
+            }
         }
         int up = (x[j][2] + 1);
         int down = (x[j][2] - 1);
-        if (is_periodic == true) {
-            if (up >= n_z)
-                up = n_z;
-            else if (down < 0)
-                down = 0;
+        if (n_z == 1) {
+            up = down = 0;
         } else {
-            if (up >= n_z)
-                up = down;
-            else if (down < 0)
-                down = up;
+            if (is_periodic == true) {
+                if (up >= n_z)
+                    up = 0;
+                else if (down < 0)
+                    down = n_z - 1;
+            } else {
+                if (up >= n_z)
+                    up = down;
+                else if (down < 0)
+                    down = up;
+            }
         }
         // printf("%d,%dnext%d up%d down%d\n",v[j][0],v[j][1],next,up,down);
         if (lattice[next][left][x[j][2]] == false) {
@@ -336,7 +353,8 @@ void LGq1D::MSDPrint() {
         double msda = static_cast<double>(r2t[n]) / counter[n] / n_part;
         msd[n] /= static_cast<double>(counter[n]);
         msd[n] /= static_cast<double>(n_part);
-        fprintf(pFile, "%d\t%f\t%f\t%d\n", ntime[n], msd[n], msda, counter[n]);
+        fprintf(pFile, "%d\t%12.10f\t%12.10f\t%d\n", ntime[n], msd[n], msda,
+                counter[n]);
     }
     fclose(pFile);
 }
@@ -355,6 +373,8 @@ LGq1D::~LGq1D() {
     delete[] imageo;
     delete[] sample;
     delete[] r2t;
+    delete[] msd;
+    delete[] mean_velocity;
     delete[] ntime;
     delete[] nntime;
     delete[] counter;
@@ -366,11 +386,7 @@ LGq1D::~LGq1D() {
     delete[] image;
     for (int i = 0; i < n_x; i++) {
         for (int j = 0; j < n_y; j++) {
-            if (n_z > 1) {
-                delete[] lattice[i][j];
-            } else {
-                delete lattice[i][j];
-            }
+            delete[] lattice[i][j];
         }
         delete[] lattice[i];
     }

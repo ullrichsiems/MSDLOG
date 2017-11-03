@@ -1,10 +1,9 @@
-CC      = mpic++
-CFLAGS  = -g #-I${HOME}/trng-4.15/
-OFLAGS  = -O3 # O3 ist nicht viel schneller und prod. Compilerwarnungen
-GFLAGS  = -g
-WFLAGS  = -Wall -Wextra -std=c++11
+CC      = g++
+CFLAGS  = -g
+OFLAGS  = -O3 
+WFLAGS  = -Wall -Wextra -std=c++11 -pedantic
 #DBFLAGS = -g  -pg # debugflag
-#LDFLAGS =  -lm  -lstdc++ -ltrng4
+#LDFLAGS =  -lm  -lstdc++
 
 
 
