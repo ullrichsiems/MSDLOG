@@ -26,8 +26,9 @@ void LGq1D::ReadInput() {
     n_z = 1;
     d = 2;
     p = 0.5;
-    is_random = 0;
-    is_periodic = 0;
+    is_random = false;
+    is_periodic = false;
+    x_periodic = true;
 
     eq_step = 1e4;
     n_step = 1e4;
@@ -60,6 +61,8 @@ void LGq1D::ReadInput() {
                 is_random = atoi(val);
             } else if (strcmp("is_periodic", var) == 0) {
                 is_periodic = atoi(val);
+            } else if (strcmp("x_periodic", var) == 0) {
+                x_periodic = atoi(val);
             } else if (strcmp("p", var) == 0) {
                 p = atof(val); // asep (asymmetriefaktor) (ssep=0.5,tasep=1)
             } else {
@@ -208,16 +211,24 @@ void LGq1D::MakeStep() {
             // move right
             next = x[j][0] + 1;
             if (next >= n_x) {
-                dimg = +1;
-                next -= n_x;
+                if (x_periodic) {
+                    dimg = +1;
+                    next -= n_x;
+                } else {
+                    continue;
+                }
             }
             dx = 1;
         } else {
             // move left
             next = x[j][0] - 1;
             if (next < 0) {
-                dimg = -1;
-                next += n_x;
+                if (x_periodic) {
+                    dimg = -1;
+                    next += n_x;
+                } else {
+                    continue;
+                }
             }
             dx = -1;
         }

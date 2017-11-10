@@ -30,6 +30,7 @@ class LGq1D {
     int d;
     double p;
     bool is_periodic;
+    bool x_periodic;
     bool is_random;
     int n_step;
     int eq_step;
