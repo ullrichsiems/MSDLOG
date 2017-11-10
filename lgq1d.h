@@ -18,7 +18,8 @@ class LGq1D {
     void FillLattice();
     void MakeStep();
     void PrintLattice(FILE *);
-    bool ***lattice;
+    int ***lattice;
+    int **nlist;
     int **x;
     int *image;
     int *v;

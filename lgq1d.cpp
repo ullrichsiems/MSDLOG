@@ -118,11 +118,11 @@ void LGq1D::Run() {
 }
 
 void LGq1D::DefineLattice() {
-    lattice = new bool **[n_x];
+    lattice = new int **[n_x];
     for (int i = 0; i < n_x; i++) {
-        lattice[i] = new bool *[n_y];
+        lattice[i] = new int *[n_y];
         for (int j = 0; j < n_y; j++) {
-            lattice[i][j] = new bool[n_z];
+            lattice[i][j] = new int[n_z];
         }
     }
 }
@@ -134,21 +134,21 @@ void LGq1D::FillLattice() {
             for (int j = 0; j < n_y; j++) {
                 for (int h = 0; h < n_z; h += 2) {
                     if (((i + j * d) % (2 * d)) == 0) {
-                        lattice[i][j][h] = true;
+                        lattice[i][j][h] = n_part;
                         if ((h + 1) < n_z) {
-                            lattice[i][j][h + 1] = false;
+                            lattice[i][j][h + 1] = -1;
                         }
                         n_part++;
                     } else if (((i + j * d) % (2 * d)) == d) {
-                        lattice[i][j][h] = false;
+                        lattice[i][j][h] = -1;
                         if ((h + 1) < n_z) {
-                            lattice[i][j][h + 1] = true;
+                            lattice[i][j][h + 1] = n_part;
                             n_part++;
                         }
                     } else {
-                        lattice[i][j][h] = false;
+                        lattice[i][j][h] = -1;
                         if ((h + 1) < n_z) {
-                            lattice[i][j][h + 1] = false;
+                            lattice[i][j][h + 1] = -1;
                         }
                     }
                 }
@@ -158,13 +158,20 @@ void LGq1D::FillLattice() {
         std::uniform_int_distribution<int> randx(0, n_x - 1);
         std::uniform_int_distribution<int> randy(0, n_y - 1);
         std::uniform_int_distribution<int> randz(0, n_z - 1);
+	for (int i = 0; i < n_x; i++) {
+            for (int j = 0; j < n_y; j++) {
+	      for (int h = 0; h < n_z; h ++) {
+		lattice[i][j][h] = -1;
+	      }
+	    }
+	}
         n_part = ((n_x + 1) * n_y * n_z) / (2 * d);
         for (int n = 0; n < n_part; n++) {
             int i = randx(gen);
             int j = randy(gen);
             int h = randz(gen);
-            if (lattice[i][j][h] == false) {
-                lattice[i][j][h] = true;
+            if (lattice[i][j][h] == -1) {
+                lattice[i][j][h] = n;
             } else {
                 n--;
             }
@@ -174,66 +181,35 @@ void LGq1D::FillLattice() {
     v = new int[n_part];
     image = new int[n_part];
     x = new int *[n_part];
+    nlist = new int  *[n_part];
     for (int i = 0; i < n_part; i++) {
         x[i] = new int[3];
+	nlist[i] = new int[9];
         image[i] = 0;
     }
 
-    int n = 0;
     for (int i = 0; i < n_x; i++) {
         for (int j = 0; j < n_y; j++) {
             for (int h = 0; h < n_z; h++) {
-                if (lattice[i][j][h]) {
+                if (lattice[i][j][h] != -1) {
+		    int n = lattice[i][j][h];
                     x[n][0] = i;
                     x[n][1] = j;
                     x[n][2] = h;
-                    n++;
                 }
             }
         }
     }
-}
-
-void LGq1D::MakeStep() {
-    std::uniform_real_distribution<double> d1(0, 1);
-    std::uniform_int_distribution<int> d2(0, n_part - 1);
-    for (int i = 0; i < n_part; i++) {
-        v[i] = 0;
-    }
-
-    for (int i = 0; i < n_part; i++) {
-        // int j = rand() % N;
-        int j = d2(gen);
-        int dx;
-        int dimg = 0;
-        // if((rand()%2) == 0){
-        if (p == 1 || d1(gen) < p) {
-            // move right
-            next = x[j][0] + 1;
-            if (next >= n_x) {
-                if (x_periodic) {
-                    dimg = +1;
-                    next -= n_x;
-                } else {
-                    continue;
-                }
-            }
-            dx = 1;
-        } else {
-            // move left
-            next = x[j][0] - 1;
-            if (next < 0) {
-                if (x_periodic) {
-                    dimg = -1;
-                    next += n_x;
-                } else {
-                    continue;
-                }
-            }
-            dx = -1;
-        }
-        int left = (x[j][1] + 1);
-        int right = (x[j][1] - 1);
+    for(int i = 0; i < n_part; i++){
+        bool l = false;
+	bool r = false;
+        bool u = false;
+	bool d = false;
+        int next = x[i][0] + 1;
+	int left = x[i][1] + 1;
+        int right = x[i][1] - 1;
+        int up = x[i][2] + 1;
+        int down = x[i][2] - 1;
         if (n_y == 1) {
             left = right = 0;
         } else {
@@ -249,8 +225,7 @@ void LGq1D::MakeStep() {
                     right = left;
             }
         }
-        int up = (x[j][2] + 1);
-        int down = (x[j][2] - 1);
+
         if (n_z == 1) {
             up = down = 0;
         } else {
@@ -266,27 +241,102 @@ void LGq1D::MakeStep() {
                     down = up;
             }
         }
-        // printf("%d,%dnext%d up%d down%d\n",v[j][0],v[j][1],next,up,down);
-        if (lattice[next][left][x[j][2]] == false) {
-            if (lattice[next][right][x[j][2]] == false) {
-                if (lattice[next][x[j][1]][up] == false) {
-                    if (lattice[next][x[j][1]][down] == false) {
-                        lattice[x[j][0]][x[j][1]][x[j][2]] = false;
-                        x[j][0] = next;
-                        image[j] += dimg;
-                        v[j] += dx;
-                        lattice[x[j][0]][x[j][1]][x[j][2]] = true;
-                    } else {
-                        // i--;
-                    }
+
+	while(1){
+	  if(!(l) && lattice[next][left][x[i][2]] != -1 ){
+	      int j =  lattice[next][left][x[i][2]];
+	      nlist[i][0] = j;
+	      nlist[j][2] = i;
+	      l = true;
+	  }
+	  if(!(r) && lattice[next][right][x[i][2]] != -1){
+	      int j = lattice[next][right][x[i][2]];
+	      nlist[i][1] = j;
+	      nlist[j][3] = i;
+	      r =  true;
+	  }
+
+	  if(!(u) && lattice[next][x[i][1]][up] != -1 ){
+	      int j =  lattice[next][x[i][1]][up];
+	      nlist[i][4] = j;
+	      nlist[j][6] = i;
+	      u = true;
+	  }
+	  if(!(d) && lattice[next][x[i][1]][down] != -1){
+	      int j = lattice[next][x[i][1]][down];
+	      nlist[i][5] = j;
+	      nlist[j][7] = i;
+	      d =  true;
+	  }
+	  if(r && l && u && d){
+	      break;
+	  }
+	  next++;
+	  if(next == n_x){
+	      next = 0;
+	  }
+	}
+        
+    }
+}
+
+void LGq1D::MakeStep() {
+    std::uniform_real_distribution<double> d1(0, 1);
+    std::uniform_int_distribution<int> d2(0, n_part - 1);
+    for (int i = 0; i < n_part; i++) {
+        v[i] = 0;
+    }
+
+    for (int i = 0; i < n_part; i++) {
+        // int j = rand() % N;
+        int j = d2(gen);
+        int dimg = 0;
+        // if((rand()%2) == 0){
+        if (p == 1 || d1(gen) < p) {
+            // move forwards
+            next = x[j][0] + 1;
+            if (next >= n_x) {
+                if (x_periodic) {
+                    dimg = +1;
+                    next -= n_x;
                 } else {
-                    // i--;
+                    continue;
                 }
-            } else {
-                // i--;
             }
+	    if((next != x[nlist[j][0]][0]) && 
+	       (next != x[nlist[j][1]][0]) && 
+	       (next != x[nlist[j][4]][0]) && 
+	       (next != x[nlist[j][5]][0]) ) {
+	      //lattice[x[j][0]][x[j][1]][x[j][2]] 
+	      //  = lattice[x[j][0]][x[j][1]][x[j][2]];
+	      //lattice[x[j][0]][x[j][1]][x[j][2]] = -1;
+		x[j][0] = next;
+		image[j] += dimg;
+		v[j]++;
+	
+	    }
         } else {
-            // i--;
+            // move backwards
+            next = x[j][0] - 1;
+            if (next < 0) {
+                if (x_periodic) {
+                    dimg = -1;
+                    next += n_x;
+                } else {
+                    continue;
+                }
+            }
+	    if((next != x[nlist[j][2]][0]) && 
+	       (next != x[nlist[j][3]][0]) && 
+	       (next != x[nlist[j][6]][0]) && 
+	       (next != x[nlist[j][7]][0]) ) {
+	      //lattice[x[j][0]][x[j][1]][x[j][2]] 
+	      //  = lattice[x[j][0]][x[j][1]][x[j][2]];
+	      //lattice[x[j][0]][x[j][1]][x[j][2]] = -1;
+		x[j][0] = next;
+		image[j] += dimg;
+		v[j]--;	
+	    }	    
         }
     }
 }
