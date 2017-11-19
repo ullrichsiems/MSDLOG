@@ -1,9 +1,8 @@
 CC      = g++
-CFLAGS  = -g
 OFLAGS  = -O3 
 WFLAGS  = -Wall -Wextra -std=c++11 -pedantic
-#DBFLAGS = -g  -pg # debugflag
-#LDFLAGS =  -lm  -lstdc++
+DBFLAGS = -g  #-pg # debugflag
+
 
 
 
@@ -12,16 +11,16 @@ TARGETDIR = RUN
 OBJ =	\
 	main.o			\
 	lgq1d.o			\
-
+	msdlog.o		\
 
 
 lg:  $(OBJ)
-	$(CC) $(OFLAGS) $(DBFLAGS) $(CFLAGS) $(WFLAGS) -o LG $(OBJ) $(LDFLAGS)
+	$(CC) $(OFLAGS) $(DBFLAGS) $(WFLAGS) -o LG $(OBJ) $(LDFLAGS)
 #	mv $(OBJ) src/
 
 
 %.o: %.cpp
-	$(CC) $(OFLAGS) $(DBFLAGS) $(CFLAGS) $(WFLAGS) -c $< -o $@
+	$(CC) $(OFLAGS) $(DBFLAGS) $(WFLAGS) -c $< -o $@
 
 style:
 	. /etc/profile.d/modules.sh; \
