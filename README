@@ -1,0 +1,4 @@
+This is a quasi 1D lattice gas simulation.
+The program code is compiled by: make
+The mean square displacement is calcualted in the MSDLOG class.
+The parameters can be varied in the file: input.para
